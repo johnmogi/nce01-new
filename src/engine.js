@@ -1,0 +1,251 @@
+const ELEMENTS = ['air', 'fire', 'water', 'earth'];
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'J', 'Q', 'K'];
+const SUITS = ['spades', 'hearts', 'diamonds', 'clubs'];
+
+const DEFAULT_RULES = Object.freeze({
+  gridSize: 3,
+  gridRows: 3,
+  gridColumns: 3,
+  eventDice: '1d6',
+  initialHandSize: 2,
+  handLimit: 7,
+  startingHealth: 3,
+  evolutionModifier: 2,
+  barrierRequiresStrictlyHigher: true,
+  allowMixedLineage: false,
+  allowExtraHealth: false,
+  multiplayer: false
+});
+
+const PRECOMPILED_RUNS = Object.freeze([
+  { id: 'debug-air-1001', seed: 1001, character: { name: 'Aeris', class: 'elf', element: 'air', gender: 'female' } },
+  { id: 'debug-fire-2002', seed: 2002, character: { name: 'Brann', class: 'warrior', element: 'fire', gender: 'male' } },
+  { id: 'debug-water-3003', seed: 3003, character: { name: 'Mira', class: 'priest', element: 'water', gender: 'female' } }
+]);
+
+function hashSeed(seed) {
+  const text = String(seed);
+  let value = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    value ^= text.charCodeAt(i);
+    value = Math.imul(value, 16777619);
+  }
+  return value >>> 0;
+}
+
+function createRng(seed) {
+  let state = hashSeed(seed) || 1;
+  return () => {
+    state += 0x6D2B79F5;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function randomInt(rng, max) {
+  return Math.floor(rng() * max);
+}
+
+function cardPoints(card) {
+  if (!card) return 0;
+  if (card.type === 'joker') return 10;
+  const rank = card.rank === 'A' ? 1 : Number(card.rank);
+  if (Number.isFinite(rank)) return rank <= 3 ? rank : rank <= 6 ? 2 : rank <= 9 ? 3 : 4;
+  return 0;
+}
+
+function cardColor(card) {
+  if (!card || card.type !== 'playing-card') return null;
+  return ['hearts', 'diamonds'].includes(card.suit) ? 'red' : 'black';
+}
+
+const ELEMENT_ADVANTAGE = Object.freeze({ water: 'fire', fire: 'earth', earth: 'air', air: 'water' });
+
+function elementalModifier(attacker, defender) {
+  if (!attacker || !defender || attacker === defender) return 0;
+  return ELEMENT_ADVANTAGE[attacker] === defender ? 1 : ELEMENT_ADVANTAGE[defender] === attacker ? -1 : 0;
+}
+
+function createCardSet() {
+  const cards = [];
+  for (const suit of SUITS) {
+    for (const rank of RANKS) {
+      cards.push({
+        id: `${rank}-${suit}`,
+        type: 'playing-card',
+        rank,
+        suit,
+        cardBack: ['J', 'Q', 'K'].includes(rank) ? 'royal' : 'standard'
+      });
+    }
+  }
+  for (const element of ELEMENTS) {
+    cards.push({ id: `joker-${element}`, type: 'joker', element, cardBack: 'elemental' });
+  }
+  return cards;
+}
+
+function shuffle(cards, rng) {
+  const result = cards.map((card) => ({ ...card }));
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = randomInt(rng, i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+function validateCharacter(input, rules) {
+  const character = input || {};
+  if (!character.name || typeof character.name !== 'string') throw new Error('character.name is required');
+  if (!['elf', 'warrior', 'priest', 'dwarf'].includes(character.class)) throw new Error('character.class must be elf, warrior, priest, or dwarf');
+  if (!ELEMENTS.includes(character.element)) throw new Error('character.element must be air, fire, water, or earth');
+  if (character.lineages && character.lineages.length > 1 && !rules.allowMixedLineage) throw new Error('mixed elemental lineage is disabled in Phase 1');
+  return {
+    id: `${character.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${character.element}`,
+    name: character.name,
+    class: character.class,
+    element: character.element,
+    gender: character.gender || 'unspecified',
+    level: 1,
+    health: rules.startingHealth,
+    maxHealth: rules.startingHealth,
+    lineages: character.lineages || [character.element]
+  };
+}
+
+function outcomeForRoll(roll) {
+  if (roll <= 2) return 'monster';
+  if (roll <= 4) return 'trap';
+  return 'treasure';
+}
+
+function detectionForRoll(roll) {
+  if (roll === 1) return 'ambush';
+  if (roll === 2) return 'detected-monster';
+  if (roll === 3) return 'surprise-trap';
+  if (roll === 4) return 'detected-trap';
+  return 'treasure';
+}
+
+function createRun({ seed, character, rules: ruleOverrides } = {}) {
+  const rules = { ...DEFAULT_RULES, ...(ruleOverrides || {}) };
+  const numericSeed = Number(seed);
+  if (!Number.isInteger(numericSeed)) throw new Error('seed must be an integer');
+  const rng = createRng(numericSeed);
+  const hero = validateCharacter(character, rules);
+  const deck = shuffle(createCardSet(), rng);
+  const hand = deck.splice(0, rules.initialHandSize);
+  const rooms = [];
+  const rows = rules.gridRows || rules.gridSize;
+  const columns = rules.gridColumns || rules.gridSize;
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      rooms.push({ id: `room-${row}-${column}`, row, column, cardId: deck[rooms.length].id, revealed: false, event: null });
+    }
+  }
+  return {
+    id: `run-${numericSeed}`,
+    seed: numericSeed,
+    status: 'active',
+    rules,
+    character: hero,
+    hand,
+    handCount: hand.length,
+    handLimit: rules.handLimit,
+    position: { row: 0, column: 0 },
+    rooms,
+    remainingDeckCount: deck.length,
+    stats: { roomsEntered: 0, monstersDefeated: 0, trapsCleared: 0, treasuresCollected: 0, cardsCommitted: 0, healthLost: 0 },
+    log: [{ type: 'run-created', seed: numericSeed, initialHandSize: hand.length }]
+  };
+}
+
+function enterRoom(run, row = run.position.row, column = run.position.column) {
+  if (!run || run.status !== 'active') throw new Error('run is not active');
+  const room = run.rooms.find((candidate) => candidate.row === Number(row) && candidate.column === Number(column));
+  if (!room) throw new Error('room is outside the map');
+  if (room.revealed) return { ...room, repeated: true };
+  const rng = createRng(`${run.seed}:${room.id}`);
+  const roll = randomInt(rng, 6) + 1;
+  const outcome = outcomeForRoll(roll);
+  const detection = detectionForRoll(roll);
+  const event = { roll, detection, type: outcome, status: 'pending' };
+  if (outcome === 'monster') {
+    event.monster = { id: `monster-${room.id}`, name: ['Goblin', 'Ember Imp', 'Stone Warden', 'Sky Drake'][randomInt(rng, 4)], element: ELEMENTS[randomInt(rng, 4)], health: 1, threat: 1 };
+  } else if (outcome === 'trap') {
+    event.trap = { id: `trap-${room.id}`, name: ['Fire Barrier', 'Dart Hall', 'Falling Stones'][randomInt(rng, 3)], element: ELEMENTS[randomInt(rng, 4)], resistance: 1, damage: 1 };
+  } else {
+    event.treasure = { id: `treasure-${room.id}`, ...run.hand.length < run.handLimit ? { card: { id: `treasure-card-${room.id}`, type: 'treasure', value: 1 + randomInt(rng, 6), cardBack: 'standard' } } : { blocked: true, reason: 'hand-limit-reached' } };
+    if (event.treasure.card) run.hand.push(event.treasure.card);
+    run.handCount = run.hand.length;
+    event.status = event.treasure.card ? 'cleared' : 'blocked';
+    if (event.treasure.card) run.stats.treasuresCollected += 1;
+  }
+  room.revealed = true;
+  room.event = event;
+  run.position = { row: room.row, column: room.column };
+  run.stats.roomsEntered += 1;
+  run.log.push({ type: 'room-entered', roomId: room.id, event });
+  return room;
+}
+
+function runSimulation({ count = 10, seed = 1001, character, rules } = {}) {
+  const total = Math.max(1, Math.min(1000, Number(count) || 10));
+  const results = [];
+  for (let index = 0; index < total; index += 1) {
+    const run = createRun({ seed: Number(seed) + index, character: character || { name: 'Simulator', class: 'elf', element: 'air' }, rules });
+    enterRoom(run, 0, 0);
+    if (run.rooms[0].event.type !== 'treasure') resolveRoom(run, 0, 0);
+    results.push({ seed: run.seed, status: run.status, health: run.character.health, stats: run.stats });
+  }
+  return {
+    count: total,
+    completed: results.filter((result) => result.status === 'active').length,
+    failed: results.filter((result) => result.status === 'failed').length,
+    averageHealth: results.reduce((sum, result) => sum + result.health, 0) / total,
+    results
+  };
+}
+
+function resolveRoom(run, row, column, { cardIds = [], elementRoll, valueRoll } = {}) {
+  const room = run.rooms.find((candidate) => candidate.row === Number(row) && candidate.column === Number(column));
+  if (!room || !room.revealed) throw new Error('room must be revealed before it can be resolved');
+  if (room.event.status === 'cleared') return room;
+  const committed = cardIds.map((id) => run.hand.find((card) => card.id === id)).filter(Boolean);
+  if (committed.length !== cardIds.length) throw new Error('one or more committed cards are not in the hand');
+  const cardPower = committed.reduce((sum, card) => sum + cardPoints(card), 0);
+  const event = room.event;
+  const roll = Number.isInteger(elementRoll) ? elementRoll : randomInt(createRng(`${run.seed}:${room.id}:element`), 6) + 1;
+  const value = Number.isInteger(valueRoll) ? valueRoll : randomInt(createRng(`${run.seed}:${room.id}:value`), 6) + 1;
+  const element = ELEMENTS[(roll - 1) % ELEMENTS.length];
+  let target = event.type === 'monster' ? event.monster.threat : event.trap.resistance;
+  const targetElement = event.type === 'monster' ? event.monster.element : event.trap.element;
+  const advantage = elementalModifier(run.character.element, targetElement);
+  const total = run.character.level + cardPower + advantage + (value >= 5 ? 1 : 0);
+  const success = run.rules.barrierRequiresStrictlyHigher ? total > target : total >= target;
+  for (const card of committed) run.hand.splice(run.hand.findIndex((candidate) => candidate.id === card.id), 1);
+  run.handCount = run.hand.length;
+  run.stats.cardsCommitted += committed.length;
+  event.resolution = { committedCardIds: cardIds, cardPower, element, value, advantage, target, total, success };
+  if (success) {
+    event.status = 'cleared';
+    if (event.type === 'monster') run.stats.monstersDefeated += 1;
+    if (event.type === 'trap') run.stats.trapsCleared += 1;
+    if (event.type === 'treasure') run.stats.treasuresCollected += 1;
+  } else {
+    run.character.health -= event.type === 'monster' ? 1 : event.trap.damage;
+    run.stats.healthLost += event.type === 'monster' ? 1 : event.trap.damage;
+    event.status = run.character.health > 0 ? 'failed' : 'dead';
+    if (event.status === 'dead') run.status = 'failed';
+  }
+  run.log.push({ type: 'room-resolved', roomId: room.id, event: event.status, success, total, target });
+  return room;
+}
+
+function getPrecompiledRuns() {
+  return PRECOMPILED_RUNS.map((run) => ({ ...run, rules: { ...DEFAULT_RULES } }));
+}
+
+module.exports = { DEFAULT_RULES, ELEMENTS, PRECOMPILED_RUNS, cardColor, cardPoints, createCardSet, createRun, detectionForRoll, elementalModifier, enterRoom, getPrecompiledRuns, outcomeForRoll, resolveRoom, runSimulation };
