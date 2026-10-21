@@ -1,0 +1,6 @@
+{
+  "id": "core",
+  "name": "Nexus Core",
+  "version": "1.0.0",
+  "content": ["cards", "monsters", "items", "traps"]
+}

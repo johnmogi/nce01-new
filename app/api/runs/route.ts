@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createRun } from '../../../src/engine';
+import { runStore } from './store';
 
 type RunPayload = {
   seed?: number;
@@ -13,6 +14,7 @@ export async function POST(request: Request) {
       seed: payload.seed ?? 1001,
       character: payload.character ?? { name: 'Aeris', class: 'warrior', element: 'air' }
     });
+    runStore.set(run.id, run);
     return NextResponse.json(run, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to create run' }, { status: 400 });

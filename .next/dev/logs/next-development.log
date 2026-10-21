@@ -1,0 +1,6 @@
+{"timestamp":"00:00:07.032","source":"Server","level":"LOG","message":"- Experiments (use with caution):"}
+{"timestamp":"00:00:07.033","source":"Server","level":"LOG","message":"  · cpus: 1"}
+{"timestamp":"00:00:07.034","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:10.468","source":"Server","level":"LOG","message":"○ Compiling / ..."}
+{"timestamp":"00:00:31.504","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}
+{"timestamp":"00:00:36.213","source":"Browser","level":"INFO","message":"Download the React DevTools for a better development experience: https://react.dev/link/react-devtools"}

@@ -69,6 +69,26 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/api/game/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/game">> = Specific
+  const handler = {} as typeof import("../../app/api/game/route.js")
+  type __Check = __IsExpected<typeof handler>
+  
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/generate-monster/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/generate-monster">> = Specific
+  const handler = {} as typeof import("../../app/api/generate-monster/route.js")
+  type __Check = __IsExpected<typeof handler>
+  
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/runs/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/runs">> = Specific

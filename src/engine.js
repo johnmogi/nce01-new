@@ -1,6 +1,10 @@
 const ELEMENTS = ['air', 'fire', 'water', 'earth'];
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'J', 'Q', 'K'];
 const SUITS = ['spades', 'hearts', 'diamonds', 'clubs'];
+const { CORE_CONTENT, elementForSuit, expansionContent, normalizeRank } = require('./content');
+const MONSTER_CATEGORIES = Object.keys(CORE_CONTENT.monsters.categories);
+const SUIT_ELEMENTS = Object.freeze(CORE_CONTENT.cards.suitElements);
+const MONSTER_NAMES = Object.freeze(Object.fromEntries(MONSTER_CATEGORIES.map((category) => [category, CORE_CONTENT.monsters.categories[category].elements])));
 
 const DEFAULT_RULES = Object.freeze({
   gridSize: 3,
@@ -48,6 +52,72 @@ function randomInt(rng, max) {
   return Math.floor(rng() * max);
 }
 
+function generateElementalMonster({ seed = 1, element, category, rank = 'A', suit, expansion = 'core' } = {}) {
+  const content = expansionContent(expansion);
+  const categories = Object.keys(content.monsters.categories);
+  const rng = createRng(`${seed}:${element || ''}:${category || ''}:${rank}:${suit || ''}`);
+  const resolvedElement = element || content.cards.suitElements[suit] || ELEMENTS[randomInt(rng, ELEMENTS.length)];
+  const resolvedCategory = category || categories[randomInt(rng, categories.length)];
+  const categoryData = content.monsters.categories[resolvedCategory] || content.monsters.categories[categories[0]];
+  const namePool = categoryData.elements[resolvedElement] || categoryData.elements.air;
+  const value = cardPoints({ type: 'playing-card', rank });
+  return {
+    id: `monster-${String(seed)}-${resolvedElement}-${resolvedCategory}-${rank}`,
+    name: namePool[randomInt(rng, namePool.length)],
+    element: resolvedElement,
+    category: resolvedCategory,
+    categoryLabel: categoryData.label,
+    sourceCard: { rank, suit: suit || null, value },
+    size: value,
+    health: ['J', 'Q', 'K'].includes(rank) ? (rank === 'J' ? 1 : rank === 'Q' ? 2 : 3) : 1,
+    vocabulary: namePool
+  };
+}
+
+function monsterFromCard(card, seed = 1, expansion = 'core') {
+  const rng = createRng(`${seed}:monster-category:${card.id}`);
+  const categories = Object.keys(expansionContent(expansion).monsters.categories);
+  return generateElementalMonster({ seed, suit: card.suit, rank: card.rank, category: categories[randomInt(rng, categories.length)], expansion });
+}
+
+function contentRankFromCard(rank) {
+  return ['J', 'Q', 'K'].includes(rank) ? '9' : rank;
+}
+
+function generateCardContent(kind, { seed = 1, element, rank = 'A', suit, expansion = 'core' } = {}) {
+  const content = expansionContent(expansion);
+  const rankNumber = normalizeRank(rank);
+  const table = content[kind]?.ranks?.[String(rankNumber)];
+  if (!table) throw new Error(`${kind} content is not defined for rank ${rankNumber}`);
+  const resolvedElement = element || elementForSuit(suit, expansion);
+  const names = table.elements[resolvedElement] || table.elements.air;
+  const rng = createRng(`${seed}:${kind}:${rankNumber}:${resolvedElement}:${suit || ''}`);
+  const name = names[randomInt(rng, names.length)];
+  return {
+    id: `${kind}-${seed}-${rankNumber}-${resolvedElement}`,
+    type: kind === 'items' ? 'item' : 'trap',
+    expansion,
+    name,
+    rank: rankNumber,
+    suit: suit || null,
+    element: resolvedElement,
+    category: table.effectKey,
+    categoryLabel: table.label,
+    power: rankNumber,
+    pv: cardPoints({ type: 'playing-card', rank: String(rankNumber) }),
+    effect: { key: table.effectKey, severity: rankNumber }
+  };
+}
+
+function generateItem(options = {}) {
+  return generateCardContent('items', options);
+}
+
+function generateTrap(options = {}) {
+  const trap = generateCardContent('traps', options);
+  return { ...trap, resistance: trap.power, damage: Math.max(1, Math.ceil(trap.power / 4)) };
+}
+
 function cardPoints(card) {
   if (!card) return 0;
   if (card.type === 'joker') return 10;
@@ -77,6 +147,7 @@ function createCardSet() {
         type: 'playing-card',
         rank,
         suit,
+        element: SUIT_ELEMENTS[suit],
         cardBack: ['J', 'Q', 'K'].includes(rank) ? 'royal' : 'standard'
       });
     }
@@ -85,6 +156,11 @@ function createCardSet() {
     cards.push({ id: `joker-${element}`, type: 'joker', element, cardBack: 'elemental' });
   }
   return cards;
+}
+
+function cardFromId(id) {
+  const [rank, suit] = String(id).split('-');
+  return { id, type: 'playing-card', rank, suit, element: SUIT_ELEMENTS[suit], cardBack: ['J', 'Q', 'K'].includes(rank) ? 'royal' : 'standard' };
 }
 
 function shuffle(cards, rng) {
@@ -173,9 +249,11 @@ function enterRoom(run, row = run.position.row, column = run.position.column) {
   const detection = detectionForRoll(roll);
   const event = { roll, detection, type: outcome, status: 'pending' };
   if (outcome === 'monster') {
-    event.monster = { id: `monster-${room.id}`, name: ['Goblin', 'Ember Imp', 'Stone Warden', 'Sky Drake'][randomInt(rng, 4)], element: ELEMENTS[randomInt(rng, 4)], health: 1, threat: 1 };
+    const generated = monsterFromCard(cardFromId(room.cardId), run.seed);
+    event.monster = { ...generated, id: `monster-${room.id}`, threat: generated.size };
   } else if (outcome === 'trap') {
-    event.trap = { id: `trap-${room.id}`, name: ['Fire Barrier', 'Dart Hall', 'Falling Stones'][randomInt(rng, 3)], element: ELEMENTS[randomInt(rng, 4)], resistance: 1, damage: 1 };
+    const sourceCard = cardFromId(room.cardId);
+    event.trap = { ...generateTrap({ seed: run.seed, rank: contentRankFromCard(sourceCard.rank), suit: sourceCard.suit }), id: `trap-${room.id}`, sourceCard: { rank: sourceCard.rank, suit: sourceCard.suit } };
   } else {
     event.treasure = { id: `treasure-${room.id}`, ...run.hand.length < run.handLimit ? { card: { id: `treasure-card-${room.id}`, type: 'treasure', value: 1 + randomInt(rng, 6), cardBack: 'standard' } } : { blocked: true, reason: 'hand-limit-reached' } };
     if (event.treasure.card) run.hand.push(event.treasure.card);
@@ -248,4 +326,4 @@ function getPrecompiledRuns() {
   return PRECOMPILED_RUNS.map((run) => ({ ...run, rules: { ...DEFAULT_RULES } }));
 }
 
-module.exports = { DEFAULT_RULES, ELEMENTS, PRECOMPILED_RUNS, cardColor, cardPoints, createCardSet, createRun, detectionForRoll, elementalModifier, enterRoom, getPrecompiledRuns, outcomeForRoll, resolveRoom, runSimulation };
+module.exports = { DEFAULT_RULES, ELEMENTS, MONSTER_CATEGORIES, MONSTER_NAMES, PRECOMPILED_RUNS, SUIT_ELEMENTS, cardColor, cardFromId, cardPoints, contentRankFromCard, createCardSet, createRun, detectionForRoll, elementalModifier, enterRoom, generateElementalMonster, generateItem, generateTrap, getPrecompiledRuns, monsterFromCard, outcomeForRoll, resolveRoom, runSimulation };

@@ -1,0 +1,8 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/_global-error/page": "/_global-error",
+  "/api/game/route": "/api/game",
+  "/api/generate-monster/route": "/api/generate-monster",
+  "/api/runs/route": "/api/runs",
+  "/page": "/"
+}

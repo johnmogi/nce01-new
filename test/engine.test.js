@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { cardPoints, createCardSet, createRun, enterRoom, elementalModifier, outcomeForRoll, resolveRoom, runSimulation } = require('../src/engine');
+const { cardPoints, createCardSet, createRun, enterRoom, elementalModifier, generateElementalMonster, monsterFromCard, outcomeForRoll, resolveRoom, runSimulation } = require('../src/engine');
 
 test('MVP card set contains 48 playing cards and four elemental jokers', () => {
   const cards = createCardSet();
@@ -64,4 +64,29 @@ test('simulation is bounded and deterministic in shape', () => {
   assert.equal(report.count, 3);
   assert.equal(report.results.length, 3);
   assert.equal(report.completed + report.failed, 3);
+});
+
+test('monster generation is deterministic and card-driven', () => {
+  const card = { id: '3-clubs', type: 'playing-card', rank: '3', suit: 'clubs' };
+  const first = monsterFromCard(card, 1001);
+  assert.deepEqual(first, monsterFromCard(card, 1001));
+  assert.equal(first.element, 'fire');
+  assert.equal(first.size, 3);
+  assert.equal(first.sourceCard.rank, '3');
+  const boss = generateElementalMonster({ seed: 2, element: 'earth', category: 'constructs-golems', rank: 'K' });
+  assert.equal(boss.health, 3);
+  assert.equal(boss.element, 'earth');
+});
+
+test('items and traps are generated from JSON content tables', () => {
+  const item = require('../src/engine').generateItem({ seed: 7, rank: 4, element: 'water' });
+  const trap = require('../src/engine').generateTrap({ seed: 7, rank: 8, element: 'earth' });
+  assert.equal(item.type, 'item');
+  assert.equal(item.rank, 4);
+  assert.equal(item.element, 'water');
+  assert.equal(item.power, 4);
+  assert.equal(trap.type, 'trap');
+  assert.equal(trap.rank, 8);
+  assert.equal(trap.category, 'surge');
+  assert.equal(trap.resistance, 8);
 });

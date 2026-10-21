@@ -1,0 +1,13 @@
+{
+  "ranks": {
+    "1": { "label": "Alarms & Sensors", "effectKey": "alarm", "elements": { "air": ["Howling Gong", "Gale Chime"], "fire": ["Heat Sensor Tripwire"], "water": ["Bubble Alert Drain"], "earth": ["Seismic Vibration Plate"] } },
+    "2": { "label": "Snares & Entanglements", "effectKey": "snare", "elements": { "air": ["Vortex Snare"], "fire": ["Cauterizing Cable"], "water": ["Whirlpool Tether"], "earth": ["Entangling Vines", "Entangling Roots"] } },
+    "3": { "label": "Darts & Projectiles", "effectKey": "projectile", "elements": { "air": ["Wind-Cutter Needles"], "fire": ["Searing Flame Darts"], "water": ["Freezing Icicle Launchers"], "earth": ["Stone Shrapnel Spout"] } },
+    "4": { "label": "Pit & Fall Traps", "effectKey": "pit", "elements": { "air": ["Updraft Pit"], "fire": ["Boiling Magma Pit"], "water": ["Drowning Well Pit"], "earth": ["Chasm Pit", "Spike Trench"] } },
+    "5": { "label": "Gas & Poison Vents", "effectKey": "vent", "elements": { "air": ["Suffocating Vacuum"], "fire": ["Inferno Vent", "Plasma Spout"], "water": ["Scalding Steam Jet"], "earth": ["Choking Dust Vent"] } },
+    "6": { "label": "Crushing & Collapsing Walls", "effectKey": "crush", "elements": { "air": ["Pressurized Wall Trap"], "fire": ["Searing Metal Compactor"], "water": ["Glacier Squeeze"], "earth": ["Grinding Slabs"] } },
+    "7": { "label": "Glyphs & Runes", "effectKey": "glyph", "elements": { "air": ["Rune of Gusts"], "fire": ["Rune of Explosion"], "water": ["Rune of Frostbite"], "earth": ["Rune of Petrification"] } },
+    "8": { "label": "Flooding & Elemental Surge", "effectKey": "surge", "elements": { "air": ["Cyclonic Burst"], "fire": ["Hellfire Eruption"], "water": ["Tidal Surge", "Flash Flood Gate"], "earth": ["Tectonic Surge"] } },
+    "9": { "label": "Mind & Dimensional Traps", "effectKey": "dimensional", "elements": { "air": ["Phantasmal Breeze Trap"], "fire": ["Pyre Mind-Scorch"], "water": ["Abyssal Rift"], "earth": ["Dimensional Collapse"] } }
+  }
+}

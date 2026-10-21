@@ -1,0 +1,13 @@
+{
+  "ranks": {
+    "1": { "label": "Trinkets & Consumables", "effectKey": "consumable", "elements": { "air": ["Feather Charm"], "fire": ["Ember Crystal"], "water": ["Dew Vial", "Pearl Charm"], "earth": ["Petrified Pebble"] } },
+    "2": { "label": "Ammunition & Projectiles", "effectKey": "projectile", "elements": { "air": ["Gale Arrow"], "fire": ["Pyro Dart"], "water": ["Ice Bolt"], "earth": ["Granite Slug"] } },
+    "3": { "label": "Light Tools & Gear", "effectKey": "tool", "elements": { "air": ["Wind Compass"], "fire": ["Magma Lantern"], "water": ["Filter Flask"], "earth": ["Iron Pick"] } },
+    "4": { "label": "Weapons", "effectKey": "weapon", "elements": { "air": ["Zephyr Bow"], "fire": ["Flame Blade", "Ember Dagger"], "water": ["Trident of Tides"], "earth": ["Obsidian Warhammer"] } },
+    "5": { "label": "Armor & Shields", "effectKey": "armor", "elements": { "air": ["Aeromancer Cloak"], "fire": ["Cinder Guard Shield"], "water": ["Scale Mail of Mists"], "earth": ["Stone Plate", "Quartz Shield"] } },
+    "6": { "label": "Rings & Amulets", "effectKey": "amulet", "elements": { "air": ["Ring of Zephyrs"], "fire": ["Flameheart Band"], "water": ["Amulet of Currents"], "earth": ["Pendant of Fortitude"] } },
+    "7": { "label": "Scrolls & Tomes", "effectKey": "knowledge", "elements": { "air": ["Gale Scroll", "Wind Tome"], "fire": ["Grimoire of Ash"], "water": ["Tome of the Deep"], "earth": ["Scroll of Earthquakes"] } },
+    "8": { "label": "Wondrous & Magical Relics", "effectKey": "relic", "elements": { "air": ["Orb of Whirling Winds"], "fire": ["Phial of Eternal Flame"], "water": ["Chalice of Tides"], "earth": ["Terra Catalyst"] } },
+    "9": { "label": "Legendary Artifacts", "effectKey": "artifact", "elements": { "air": ["Crown of the Tempest"], "fire": ["Scepter of the Phoenix"], "water": ["Ocean King Trident"], "earth": ["Heart of the Mountain"] } }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "categories": {
+    "beasts-birds": { "label": "Beasts & Birds", "elements": { "air": ["Storm Eagle", "Zephyr Falcon"], "fire": ["Flame Hound", "Ember Phoenix"], "water": ["Mist Wolf", "River Otter"], "earth": ["Stone Bear", "Iron Horned Stag"] } },
+    "insects": { "label": "Insects", "elements": { "air": ["Gale Wasp", "Cloud Locust"], "fire": ["Cinder Beetle", "Pyro Ant"], "water": ["Dew Spider", "Stream Dragonfly"], "earth": ["Burrow Beetle", "Rock Mantis"] } },
+    "constructs-golems": { "label": "Constructs / Golems", "elements": { "air": ["Wind Automaton", "Gale Statue"], "fire": ["Lava Golem", "Magma Forge-Guard"], "water": ["Ice Colossus", "Wave Vessel"], "earth": ["Clay Guardian", "Granitic Titan"] } },
+    "aquatic-creatures": { "label": "Aquatic Creatures", "elements": { "air": ["Flying Ray", "Flying Serpent"], "fire": ["Steam Leviathan", "Magma Crab"], "water": ["Tide Whale", "Coral Shark"], "earth": ["Trench Turtle", "Mud Eel"] } },
+    "crystalline-minerals": { "label": "Crystalline / Minerals", "elements": { "air": ["Sonic Prism", "Glass Sprite"], "fire": ["Obsidian Fiend", "Ruby Core"], "water": ["Frost Crystal", "Pearl Drone"], "earth": ["Quartz Crawler", "Geode Elemental"] } },
+    "oozes-mud": { "label": "Oozes & Mud", "elements": { "air": ["Miasma Blob", "Vapor Slime"], "fire": ["Scorching Ooze", "Plasma Slug"], "water": ["Liquefied Slimes", "Algae Foam"], "earth": ["Mud Dredge", "Clay Sludge"] } }
+  }
+}

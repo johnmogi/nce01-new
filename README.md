@@ -21,6 +21,22 @@ npm start
 
 The legacy engine API remains available with `npm run api:start` when a standalone Node API process is needed.
 
+The Next admin console uses these typed routes:
+
+- `POST /api/runs` — create and store a deterministic run
+- `POST /api/game` — reveal or resolve a room for a stored run
+- `POST /api/generate-monster` — generate an elemental monster from a source card
+
+## Expansion content model
+
+Gameplay cards remain canonical. Names and thematic definitions are presentation/content data: for example, an Ace of Fire is represented mechanically as rank `A` / value `1` / suit `clubs`; “Ace of Fire” is a display vocabulary choice.
+
+Core content is loaded from `data/expansions/core/`. Each expansion is a folder with a `manifest.json` and JSON tables for cards, monsters, items, and traps. Add a future expansion by adding another manifest folder; the engine registry discovers it without changing generator logic. The same generator contract is used for all three content families:
+
+```text
+card/rank + suit/element + seed -> mechanics + cosmetic vocabulary
+```
+
 ## Initial API
 
 - `GET /health` — service health check
